@@ -1,109 +1,75 @@
-#!/usr/bin/env bash
-set -Eeuo pipefail
+#!/bin/bash
+set -euo pipefail
 
-# DevGenie Full Installer for Apache+mod_wsgi+Flask+SSL
-# - Creates correct Apache vhost config for mod_wsgi and SSL
-# - Creates the .wsgi entrypoint file
-# - Sets up SSL, Python venv, DB, permissions, etc.
+# DevGenie Robust Installer: nginx + systemd + Flask + MySQL + HTTPS
 
-gen_password() {
-  LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 24 || echo "fallbackpassword123ABC"
-}
-normalize_for_mysql() {
-  local s="${1//[^a-zA-Z0-9]/_}"
-  echo "${s:0:32}"
-}
-ask() {
-  local prompt="$1"
-  local default="${2:-}"
-  local __outvar="$3"
-  local reply
-  if [[ -n "$default" ]]; then
-    read -r -p "$prompt [$default]: " reply || true
-    reply="${reply:-$default}"
-  else
-    read -r -p "$prompt: " reply || true
-  fi
-  printf -v "$__outvar" '%s' "$reply"
-}
-ask_hidden() {
-  local prompt="$1"
-  local __outvar="$2"
-  local reply
-  read -r -s -p "$prompt: " reply || true
-  echo
-  printf -v "$__outvar" '%s' "$reply"
-}
-require_root() {
-  if [[ $EUID -ne 0 ]]; then
-    echo "Error: This script must be run as root. Try: sudo bash $0" >&2
-    exit 1
-  fi
-}
-test_mysql_connection() {
-  local dbuser="$1"
-  local dbpass="$2"
-  local dbname="$3"
-  mysql -u "$dbuser" -p"$dbpass" -e "USE \`${dbname}\`;" 2>/dev/null
-}
-
-require_root
-
-echo "DevGenie Installer (Apache + mod_wsgi + Flask + SSL)"
-echo "-----------------------------------------------------"
-
-# 1. PROMPT FOR DOMAIN AND PATHS
-ask "Enter domain or subdomain for DevGenie (e.g. devgenie.yourdomain.com)" "devgenie.local" GENIE_DOMAIN
-GENIE_WEBROOT="/var/www/${GENIE_DOMAIN}"
-APPDIR="$GENIE_WEBROOT/DevGenie"
-VENV="$APPDIR/venv"
-
-# 2. CHECK FOR EXISTING FOLDER
-if [ -d "$GENIE_WEBROOT" ]; then
-  echo "Webroot $GENIE_WEBROOT exists. Remove and recreate? (y/n)"
-  read -r CONFIRM
-  if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
-    rm -rf "$GENIE_WEBROOT"
-    echo "Removed $GENIE_WEBROOT."
-  else
-    echo "Aborting setup."
-    exit 1
-  fi
-fi
-
-mkdir -p "$GENIE_WEBROOT"
-chown -R www-data:www-data "$GENIE_WEBROOT"
-
-# 3. INSTALL SYSTEM DEPENDENCIES
-export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get install -y apache2 mysql-server python3 python3-pip python3-venv \
-  libapache2-mod-wsgi-py3 openssl git certbot python3-certbot-apache \
-  pkg-config libmysqlclient-dev
-
-# 4. CLONE OR UPDATE REPO
-if [ ! -d "$APPDIR" ]; then
-  git clone https://github.com/andrew-kemp/DevGenie.git "$APPDIR"
-else
-  cd "$APPDIR"
-  git pull
-  cd -
-fi
-
-# 5. PYTHON VIRTUALENV & DEPENDENCIES
-cd "$APPDIR"
-python3 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# 6. DATABASE SETUP
+DOMAIN_DEFAULT="devgenie.local"
+INSTALL_PARENT="/var/www"
+REPO_URL="https://github.com/andrew-kemp/DevGenie.git"
+APP_SUBDIR="DevGenie"
+VENV_SUBDIR="venv"
+FLASK_PORT=5000
+SYSTEMD_SERVICE="devgenie"
 DB_NAME="devgenie"
 DB_USER="devgenie"
-ask_hidden "Enter MySQL DB password for devgenie (leave blank to auto-generate)" DB_PASS
+
+echo "----------------------------------------------------"
+echo "         DevGenie Automated Installer"
+echo "----------------------------------------------------"
+
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as root (use sudo)"
+  exit 1
+fi
+
+# 1. --- Prompt for domain name ---
+read -rp "Enter domain or subdomain for DevGenie [${DOMAIN_DEFAULT}]: " GENIE_DOMAIN
+GENIE_DOMAIN="${GENIE_DOMAIN:-$DOMAIN_DEFAULT}"
+
+INSTALL_DIR="${INSTALL_PARENT}/${GENIE_DOMAIN}"
+APP_DIR="${INSTALL_DIR}/${APP_SUBDIR}"
+VENV_DIR="${APP_DIR}/${VENV_SUBDIR}"
+
+sudo mkdir -p "$INSTALL_DIR"
+sudo chown www-data:www-data "$INSTALL_DIR"
+
+# 2. --- Remove Apache if present and stop it ---
+if systemctl is-active --quiet apache2; then
+  echo "Stopping Apache (not needed)..."
+  systemctl stop apache2
+  systemctl disable apache2
+fi
+
+# 3. --- Install dependencies (including nginx) ---
+echo "Installing dependencies..."
+apt-get update
+apt-get install -y python3 python3-pip python3-venv git nginx mysql-server \
+    openssl certbot python3-certbot-nginx pkg-config libmysqlclient-dev
+
+# 4. --- Clone or update repo as www-data ---
+echo "Cloning or updating DevGenie repository..."
+if [ ! -d "$APP_DIR" ]; then
+    sudo -u www-data git clone "$REPO_URL" "$APP_DIR"
+    sudo chown -R www-data:www-data "$APP_DIR"
+else
+    cd "$APP_DIR"
+    sudo -u www-data git pull
+    cd -
+    sudo chown -R www-data:www-data "$APP_DIR"
+fi
+
+# 5. --- Set up Python venv and requirements ---
+echo "Setting up Python virtual environment..."
+sudo -u www-data python3 -m venv "$VENV_DIR"
+sudo -u www-data bash -c "source $VENV_DIR/bin/activate && pip install --upgrade pip && pip install -r $APP_DIR/requirements.txt"
+
+# 6. --- Database Setup ---
+echo "Setting up MySQL database..."
+read -rsp "Enter MySQL DB password for devgenie (leave blank to auto-generate): " DB_PASS
+echo
 if [[ -z "$DB_PASS" ]]; then
-  DB_PASS="$(gen_password)"
-  echo "Generated DB password: $DB_PASS"
+    DB_PASS="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)"
+    echo "Generated DB password: $DB_PASS"
 fi
 
 systemctl enable --now mysql
@@ -115,114 +81,93 @@ GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'localhost';
 FLUSH PRIVILEGES;
 SQL
 
-echo "Testing database connection..."
-if ! test_mysql_connection "$DB_USER" "$DB_PASS" "$DB_NAME"; then
-  echo "ERROR: Could not connect to database as $DB_USER using specified password."
-  exit 1
+# 7. --- Import schema if present ---
+if [ -f "$APP_DIR/scripts/schema.sql" ]; then
+    echo "Importing database schema..."
+    mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$APP_DIR/scripts/schema.sql"
 fi
-echo "Database connection successful."
 
-# 7. IMPORT DB SCHEMA
-mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < scripts/schema.sql
-
-# 8. CREATE .env WITH CORRECT PERMISSIONS
-cat > .env <<EOF
+# 8. --- Create .env for the app ---
+echo "Creating .env file..."
+sudo -u www-data bash -c "cat > $APP_DIR/.env" <<EOF
 FLASK_ENV=production
 SECRET_KEY=$(openssl rand -hex 16)
 DATABASE_URL=mysql://$DB_USER:$DB_PASS@localhost/$DB_NAME
 EOF
-chown www-data:www-data .env
-chmod 600 .env
+sudo chown www-data:www-data "$APP_DIR/.env"
+sudo chmod 600 "$APP_DIR/.env"
 
-# 9. CREATE THE .wsgi FILE FOR APACHE+mod_wsgi
-WSGI_FILE="$APPDIR/devgenie.wsgi"
-cat > "$WSGI_FILE" <<EOF
-import sys
-import os
+# 9. --- Create systemd service file for Flask app ---
+echo "Creating systemd service for DevGenie..."
+sudo tee /etc/systemd/system/${SYSTEMD_SERVICE}.service > /dev/null <<EOF
+[Unit]
+Description=DevGenie Flask App
+After=network.target
 
-sys.path.insert(0, '$APPDIR')
-os.environ['FLASK_ENV'] = 'production'
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=$APP_DIR
+Environment="PATH=$VENV_DIR/bin"
+Environment="FLASK_ENV=production"
+ExecStart=$VENV_DIR/bin/python $APP_DIR/run.py
+Restart=always
 
-from app import app as application  # Change if your app's main file/object is different
-EOF
-chown www-data:www-data "$WSGI_FILE"
-chmod 644 "$WSGI_FILE"
-
-# 10. CREATE (OR OVERWRITE) APACHE VHOST CONF FILE FOR MOD_WSGI + SSL
-VHOST_FILE="/etc/apache2/sites-available/${GENIE_DOMAIN}.conf"
-cat > "$VHOST_FILE" <<EOF
-<VirtualHost *:80>
-    ServerName ${GENIE_DOMAIN}
-    DocumentRoot ${APPDIR}
-
-    <Directory ${APPDIR}>
-        Require all granted
-        Options -Indexes
-    </Directory>
-
-    WSGIDaemonProcess devgenie user=www-data group=www-data threads=5 python-home=${VENV}
-    WSGIScriptAlias / ${WSGI_FILE}
-
-    ErrorLog \${APACHE_LOG_DIR}/${GENIE_DOMAIN}_error.log
-    CustomLog \${APACHE_LOG_DIR}/${GENIE_DOMAIN}_access.log combined
-</VirtualHost>
-
-# The following SSL VirtualHost will be enabled by certbot automatically.
-# If you want to pre-create it, uncomment and adapt:
-#
-# <IfModule mod_ssl.c>
-# <VirtualHost *:443>
-#     ServerName ${GENIE_DOMAIN}
-#     DocumentRoot ${APPDIR}
-#     <Directory ${APPDIR}>
-#         Require all granted
-#         Options -Indexes
-#     </Directory>
-#     WSGIDaemonProcess devgenie-ssl user=www-data group=www-data threads=5 python-home=${VENV}
-#     WSGIScriptAlias / ${WSGI_FILE}
-#     ErrorLog \${APACHE_LOG_DIR}/${GENIE_DOMAIN}_ssl_error.log
-#     CustomLog \${APACHE_LOG_DIR}/${GENIE_DOMAIN}_ssl_access.log combined
-#     SSLEngine on
-#     SSLCertificateFile /etc/letsencrypt/live/${GENIE_DOMAIN}/fullchain.pem
-#     SSLCertificateKeyFile /etc/letsencrypt/live/${GENIE_DOMAIN}/privkey.pem
-#     Include /etc/letsencrypt/options-ssl-apache.conf
-# </VirtualHost>
-# </IfModule>
+[Install]
+WantedBy=multi-user.target
 EOF
 
-a2ensite "${GENIE_DOMAIN}.conf"
-a2enmod wsgi
-a2enmod rewrite
-a2enmod ssl
-systemctl reload apache2
+systemctl daemon-reload
+systemctl enable "${SYSTEMD_SERVICE}"
+systemctl restart "${SYSTEMD_SERVICE}"
 
-# 11. SSL SETUP WITH CERTBOT
+# 10. --- Configure nginx reverse proxy ---
+echo "Configuring nginx reverse proxy..."
+NGINX_CONF="/etc/nginx/sites-available/devgenie.conf"
+sudo tee "$NGINX_CONF" > /dev/null <<NGINXCONF
+server {
+    listen 80;
+    server_name ${GENIE_DOMAIN};
+
+    location / {
+        proxy_pass http://127.0.0.1:${FLASK_PORT};
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+NGINXCONF
+
+sudo ln -sf "$NGINX_CONF" "/etc/nginx/sites-enabled/devgenie.conf"
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
+
+# 11. --- Obtain and configure SSL certificate with Let's Encrypt ---
 echo
-read -p "Do you want to set up SSL with Let's Encrypt now? (y/n) [y]: " SSL_SETUP
-SSL_SETUP="${SSL_SETUP,,}"
-SSL_SETUP="${SSL_SETUP:-y}"
-if [[ "${SSL_SETUP}" == "y" ]]; then
-    certbot --apache -d "${GENIE_DOMAIN}"
-    systemctl reload apache2
+read -rp "Do you want to set up SSL with Let's Encrypt now? (y/n) [y]: " DO_SSL
+DO_SSL="${DO_SSL,,}"; DO_SSL="${DO_SSL:-y}"
+if [[ "$DO_SSL" == "y" ]]; then
+    certbot --nginx -d "${GENIE_DOMAIN}" --non-interactive --agree-tos -m admin@${GENIE_DOMAIN} --redirect
+    systemctl reload nginx
     echo "SSL configured with Let's Encrypt."
 else
     echo "You can set up SSL later with certbot."
 fi
 
-# 12. REMOVE SYSTEMD FLASK RUN SERVICE IF IT EXISTS
-systemctl stop devgenie || true
-systemctl disable devgenie || true
-
 echo
 echo "==== DevGenie installation complete! ===="
-echo "App location: $APPDIR"
-echo "Virtualenv:   $VENV"
+echo "App location: $APP_DIR"
+echo "Virtualenv:   $VENV_DIR"
 echo "Database user: $DB_USER"
 echo "Database password: $DB_PASS"
 echo
-echo "App is running under Apache with mod_wsgi and SSL."
-echo "You do NOT need to run 'flask run'."
-echo "Check logs: sudo tail -f /var/log/apache2/${GENIE_DOMAIN}_error.log"
+echo "App is running as a systemd service: sudo systemctl status ${SYSTEMD_SERVICE}"
+echo "Access it at: https://${GENIE_DOMAIN}/setup"
+echo "If not using SSL yet: http://${GENIE_DOMAIN}/setup"
 echo
-echo "Visit https://${GENIE_DOMAIN}/setup to complete setup."
+echo "Check logs:"
+echo "  App:   sudo journalctl -u ${SYSTEMD_SERVICE} -f"
+echo "  nginx: sudo tail -f /var/log/nginx/error.log"
+echo
 echo "==== All done! ===="
