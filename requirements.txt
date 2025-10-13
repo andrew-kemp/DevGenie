@@ -1,8 +1,6 @@
 Flask
 Flask-SQLAlchemy
 Flask-WTF
-msal
-mysqlclient
-gunicorn
+Flask-Bcrypt
 python-dotenv
-# Add more as your project grows
+mysqlclient

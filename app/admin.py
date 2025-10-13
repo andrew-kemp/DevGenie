@@ -1,3 +1,5 @@
-# Admin dashboard routes and logic placeholder
+from flask import Blueprint
 
-# For admin approvals and management
+bp = Blueprint('admin', __name__)
+
+# Placeholder for admin routes (login, dashboard, approvals)

@@ -1,5 +1,31 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Request a Dev Account</h2>
-<!-- Form will go here -->
+<h2>Request a New Dev Account</h2>
+<form method="POST" action="/request">
+  <div class="mb-3">
+    <label for="requester_email" class="form-label">Your (Requester) Email</label>
+    <input type="email" class="form-control" id="requester_email" name="requester_email" required>
+  </div>
+  <div class="mb-3">
+    <label for="target_email" class="form-label">Target User's Email</label>
+    <input type="email" class="form-control" id="target_email" name="target_email" required>
+  </div>
+  <div class="mb-3">
+    <label for="first_name" class="form-label">First Name</label>
+    <input type="text" class="form-control" id="first_name" name="first_name" required>
+  </div>
+  <div class="mb-3">
+    <label for="last_name" class="form-label">Last Name</label>
+    <input type="text" class="form-control" id="last_name" name="last_name" required>
+  </div>
+  <div class="mb-3">
+    <label for="display_name" class="form-label">Display Name</label>
+    <input type="text" class="form-control" id="display_name" name="display_name" required>
+  </div>
+  <div class="mb-3">
+    <label for="justification" class="form-label">Justification</label>
+    <textarea class="form-control" id="justification" name="justification" rows="3" required></textarea>
+  </div>
+  <button type="submit" class="btn btn-primary">Submit Request</button>
+</form>
 {% endblock %}
