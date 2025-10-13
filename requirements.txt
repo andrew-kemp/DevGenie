@@ -1,0 +1,8 @@
+Flask
+Flask-SQLAlchemy
+Flask-WTF
+msal
+mysqlclient
+gunicorn
+python-dotenv
+# Add more as your project grows
