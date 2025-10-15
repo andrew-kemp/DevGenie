@@ -1,4 +1,26 @@
 <?php
+// Redirect to setup.php if config is missing
+if (!file_exists(__DIR__ . '/../config/config.php')) {
+    header("Location: /setup.php");
+    exit;
+}
+require_once(__DIR__ . '/../config/config.php');
+
+// Check if admin exists in DB
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+$res = $conn->query("SHOW TABLES LIKE 'admins'");
+$admin_exists = false;
+if ($res && $res->num_rows > 0) {
+    $res2 = $conn->query("SELECT COUNT(*) as cnt FROM admins");
+    $row = $res2 ? $res2->fetch_assoc() : null;
+    $admin_exists = $row && $row['cnt'] > 0;
+}
+if (!$admin_exists) {
+    header("Location: /setup.php");
+    exit;
+}
+$conn->close();
+
 session_start();
 // Redirect already authenticated users
 if (isset($_SESSION['admin_id'])) {
