@@ -1,6 +1,12 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) && !isset($_SESSION['admin_id'])) {
+
+if (isset($_SESSION['admin_id'])) {
+    header("Location: admin/index.php");
+    exit;
+}
+
+if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
@@ -24,12 +30,9 @@ if (isset($_SESSION['user_id'])) {
     <?php if ($user): ?>
         <p>Hello, <b><?=htmlspecialchars($user['display_name'])?></b> (<?=htmlspecialchars($user['dev_email'])?>)!</p>
         <?php if ($user['is_admin']): ?>
-            <p><a href="admin_users.php">Admin User Management</a></p>
+            <p><a href="admin/index.php">Go to Admin Dashboard</a></p>
         <?php endif; ?>
         <p><a href="profile.php">My Profile</a></p>
-    <?php elseif (isset($_SESSION['admin_id'])): ?>
-        <p>Logged in as <b>admin</b>.</p>
-        <p><a href="admin_users.php">Admin User Management</a></p>
     <?php endif; ?>
     <p><a href="logout.php">Logout</a></p>
 </div>

@@ -1,6 +1,11 @@
 <?php
 session_start();
-if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
+// Redirect already authenticated users
+if (isset($_SESSION['admin_id'])) {
+    header("Location: admin/index.php");
+    exit;
+}
+if (isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }

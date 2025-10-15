@@ -4,14 +4,12 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 session_start();
-require_once(__DIR__ . '/../config/config.php');
+require_once(__DIR__ . '/config/config.php');
 
-// Helper for XSS-safe output
 function esc($x) { return htmlspecialchars($x ?? '', ENT_QUOTES); }
 
 $error = "";
 
-// Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -26,11 +24,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $res = $stmt->get_result();
         $admin = $res->fetch_assoc();
         if ($admin && password_verify($password, $admin['password_hash'])) {
-            // Success
+            // Success - set admin session and redirect to admin dashboard
             $_SESSION['admin_id'] = $admin['id'];
             $_SESSION['admin_username'] = $admin['username'];
             $_SESSION['is_admin'] = true;
-            header("Location: index.php");
+            header("Location: admin/index.php");
             exit;
         } else {
             $error = "Invalid credentials.";
