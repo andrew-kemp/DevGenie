@@ -6,8 +6,8 @@ echo "==== DevGenie Automated Installer ===="
 REPO_URL="https://github.com/andrew-kemp/DevGenie.git"
 REPO_DIR="/tmp/DevGenie"
 CERT_DIR="/etc/devgenie"
-CERT_PATH="$CERT_DIR/keyvault.crt"
-KEY_PATH="$CERT_DIR/keyvault.key"
+CERT_PATH="$CERT_DIR/devgenie_azure_cert.crt"
+KEY_PATH="$CERT_DIR/devgenie_azure_cert.key"
 
 # 1. Prompt for domain, DB, web root
 read -p "Enter the full domain name for this instance (e.g., devgenie.andykemp.cloud): " DOMAIN
@@ -96,9 +96,39 @@ fi
 sudo mkdir -p "$WEBROOT"
 sudo rsync -a "$REPO_DIR/public_html/" "$WEBROOT/public_html/"
 sudo rsync -a "$REPO_DIR/public_html/assets/" "$WEBROOT/public_html/assets/"
-sudo rsync -a "$REPO_DIR/config/" "$WEBROOT/config/"
 sudo rsync -a "$REPO_DIR/db/" "$WEBROOT/db/"
 sudo chown -R www-data:www-data "$WEBROOT"
+
+# Copy the config template if not already present
+sudo mkdir -p "$WEBROOT/config"
+if [ -f "$REPO_DIR/config/config.template.php" ]; then
+    sudo cp "$REPO_DIR/config/config.template.php" "$WEBROOT/config/config.php"
+else
+    # fallback: create the config.php from scratch if template missing
+    cat <<EOF | sudo tee "$WEBROOT/config/config.php" > /dev/null
+<?php
+define('DB_HOST', 'localhost');
+define('DB_USER', '$DBUSER');
+define('DB_PASS', '$DBPASS');
+define('DB_NAME', '$DBNAME');
+define('CERT_PATH', '$CERT_PATH');
+define('KEY_PATH', '$KEY_PATH');
+// Add additional config as needed
+?>
+EOF
+fi
+
+# Now fill in the database and key values in config.php if template was used
+if [ -f "$REPO_DIR/config/config.template.php" ]; then
+    sudo sed -i "s|DB_HOST_PLACEHOLDER|localhost|g" "$WEBROOT/config/config.php"
+    sudo sed -i "s|DB_USER_PLACEHOLDER|$DBUSER|g" "$WEBROOT/config/config.php"
+    sudo sed -i "s|DB_PASS_PLACEHOLDER|$DBPASS|g" "$WEBROOT/config/config.php"
+    sudo sed -i "s|DB_NAME_PLACEHOLDER|$DBNAME|g" "$WEBROOT/config/config.php"
+    sudo sed -i "s|CERT_PATH_PLACEHOLDER|$CERT_PATH|g" "$WEBROOT/config/config.php"
+    sudo sed -i "s|KEY_PATH_PLACEHOLDER|$KEY_PATH|g" "$WEBROOT/config/config.php"
+fi
+sudo chown www-data:www-data "$WEBROOT/config/config.php"
+sudo chmod 640 "$WEBROOT/config/config.php"
 
 # Install PHP SAML library (onelogin/php-saml)
 cd "$WEBROOT"
@@ -124,32 +154,13 @@ sudo mysql "$DBNAME" < "$WEBROOT/db/schema.sql"
 
 sudo mkdir -p "$CERT_DIR"
 if [ ! -f "$KEY_PATH" ] || [ ! -f "$CERT_PATH" ]; then
-    sudo openssl req -x509 -newkey rsa:4096 -keyout "$KEY_PATH" -out "$CERT_PATH" -days 3650 -nodes -subj "/CN=DevGenieKeyVault"
+    sudo openssl req -x509 -newkey rsa:4096 -keyout "$KEY_PATH" -out "$CERT_PATH" -days 3650 -nodes -subj "/CN=DevGenieAzureApp"
     sudo chmod 600 "$KEY_PATH"
     sudo chmod 644 "$CERT_PATH"
-    echo "Generated SP/Key Vault certificate and key."
+    echo "Generated Azure App Registration certificate and key."
 else
     echo "Certificate and key already exist at $CERT_PATH and $KEY_PATH"
 fi
-
-cat <<EOF | sudo tee "$WEBROOT/config/config.php" > /dev/null
-<?php
-define('DB_HOST', 'localhost');
-define('DB_USER', '$DBUSER');
-define('DB_PASS', '$DBPASS');
-define('DB_NAME', '$DBNAME');
-define('CERT_PATH', '$CERT_PATH');
-define('KEY_PATH', '$KEY_PATH');
-?>
-EOF
-
-# Store only the certificate and key path settings for now
-sudo mysql "$DBNAME" -e "
-INSERT INTO settings (setting_key, setting_value) VALUES
-('cert_path', '$CERT_PATH'),
-('key_path', '$KEY_PATH')
-ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
-"
 
 VHOST_CONF="/etc/apache2/sites-available/$DOMAIN.conf"
 sudo bash -c "cat <<EOF > $VHOST_CONF
@@ -173,6 +184,6 @@ sudo certbot --apache -d $DOMAIN --non-interactive --agree-tos -m admin@$DOMAIN
 echo "==== INSTALL COMPLETE ===="
 echo "Site files: $WEBROOT"
 echo "Go to https://$DOMAIN/setup.php to continue setup."
-echo "Database credentials and cert paths have been added to $WEBROOT/config/config.php."
+echo "Database credentials and Azure app cert paths have been added to $WEBROOT/config/config.php."
 echo "Python venv for automation: $VENV_DIR"
 echo "All Entra, Key Vault, SSO (SAML), and SMTP configuration will be handled in the web portal."
