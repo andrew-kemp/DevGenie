@@ -22,44 +22,7 @@ DBPASS=$(openssl rand -base64 20)
 read -p "Enter the web folder location [$DEFAULT_WEBROOT]: " WEBROOT
 WEBROOT=${WEBROOT:-$DEFAULT_WEBROOT}
 
-# 2. Prompt for SMTP, Azure, From Name/Address
-read -p "Enter SMTP host: " SMTP_HOST
-read -p "Enter SMTP port: " SMTP_PORT
-read -p "Enter SMTP username: " SMTP_USER
-read -sp "Enter SMTP password: " SMTP_PASS
-echo
-read -p "Enter Email From Address: " EMAIL_FROM
-read -p "Enter Email From Name: " EMAIL_FROM_NAME
-
-# 3. Azure setup
-echo "Do you want to create an Azure Service Principal and Key Vault automatically? (y/N): "
-read CREATE_AZURE
-
-if [[ "$CREATE_AZURE" =~ ^[Yy]$ ]]; then
-    echo "Creating Azure Service Principal..."
-    # SP Name must be unique in tenant
-    SP_NAME="DevGenieSP-$(date +%s)"
-    AZURE_SP_JSON=$(az ad sp create-for-rbac --name "$SP_NAME" --skip-assignment --sdk-auth)
-    CLIENT_ID=$(echo $AZURE_SP_JSON | jq -r .clientId)
-    TENANT_ID=$(echo $AZURE_SP_JSON | jq -r .tenantId)
-    echo "Created Service Principal: $CLIENT_ID"
-
-    echo "Creating Azure Key Vault..."
-    read -p "Enter Azure Resource Group for Key Vault: " AZ_RG
-    read -p "Enter Azure location for Key Vault (e.g., uksouth): " AZ_LOC
-    KV_NAME="devgeniekv$(date +%s)"
-    az keyvault create --name $KV_NAME --resource-group $AZ_RG --location $AZ_LOC
-    KV_URI="https://$KV_NAME.vault.azure.net/"
-    echo "Assigning access to SP on Key Vault..."
-    az keyvault set-policy --name $KV_NAME --spn $CLIENT_ID --secret-permissions get list set delete --key-permissions get list --certificate-permissions get list
-    echo "Azure Key Vault URI: $KV_URI"
-else
-    read -p "Enter Azure Service Principal (App) Client ID: " CLIENT_ID
-    read -p "Enter Azure Tenant ID: " TENANT_ID
-    read -p "Enter Azure Key Vault URI: " KV_URI
-fi
-
-# 4. Check for/removal of existing resources
+# 2. Check for/removal of existing resources
 FOLDER_EXISTS=0
 DB_EXISTS=0
 USER_EXISTS=0
@@ -84,7 +47,7 @@ if [ "$FOLDER_EXISTS" -eq 1 ] || [ "$DB_EXISTS" -eq 1 ] || [ "$USER_EXISTS" -eq 
     fi
 fi
 
-# 5. Clone repo, install deps, venv etc (as before)
+# 3. Clone repo, install deps, venv, etc.
 if [ ! -d "$REPO_DIR/.git" ]; then
     git clone "$REPO_URL" "$REPO_DIR"
 else
@@ -136,27 +99,12 @@ define('KEY_PATH', '$KEY_PATH');
 ?>
 EOF
 
-# Insert initial settings into DB (except SMTP_PASS, which is stored as secret in Key Vault or after web wizard)
 sudo mysql "$DBNAME" -e "
 INSERT INTO settings (setting_key, setting_value) VALUES
-('smtp_host', '$SMTP_HOST'),
-('smtp_port', '$SMTP_PORT'),
-('smtp_user', '$SMTP_USER'),
-('smtp_from', '$EMAIL_FROM'),
-('smtp_from_name', '$EMAIL_FROM_NAME'),
-('kv_uri', '$KV_URI'),
-('sp_client_id', '$CLIENT_ID'),
-('tenant_id', '$TENANT_ID'),
 ('cert_path', '$CERT_PATH'),
 ('key_path', '$KEY_PATH')
 ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
 "
-
-# Optionally store SMTP_PASS in Azure Key Vault if created
-if [[ "$CREATE_AZURE" =~ ^[Yy]$ ]]; then
-    az keyvault secret set --vault-name $KV_NAME --name "smtp-password" --value "$SMTP_PASS"
-    echo "SMTP password stored in Azure Key Vault as secret 'smtp-password'."
-fi
 
 VHOST_CONF="/etc/apache2/sites-available/$DOMAIN.conf"
 sudo bash -c "cat <<EOF > $VHOST_CONF
@@ -182,4 +130,4 @@ echo "Site files: $WEBROOT"
 echo "Go to https://$DOMAIN/setup.php to continue setup."
 echo "Database credentials and cert paths have been added to $WEBROOT/config/config.php."
 echo "Python venv for automation: $VENV_DIR"
-echo "Configure SMTP2Go, Azure, and KeyVault in the web setup wizard if needed."
+echo "All Azure, Key Vault, and SMTP configuration will be handled in the web portal."
