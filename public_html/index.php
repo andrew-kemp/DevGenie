@@ -1,19 +1,16 @@
 <?php
 session_start();
-
-// If not logged in, redirect to login page
 if (!isset($_SESSION['user_id']) && !isset($_SESSION['admin_id'])) {
     header("Location: login.php");
     exit;
 }
 
-// Load user info if SSO user logged in
+// Load user info if SAML user logged in
 $user = null;
 if (isset($_SESSION['user_id'])) {
     require_once(__DIR__ . '/../db/users.php');
     $user = user_by_id($_SESSION['user_id']);
 }
-
 ?>
 <!DOCTYPE html>
 <html>

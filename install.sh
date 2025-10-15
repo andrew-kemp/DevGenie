@@ -64,7 +64,7 @@ sudo apt update
 sudo apt upgrade -y
 sudo apt install -y apache2 mysql-server php php-mysql libapache2-mod-php python3 python3-venv python3-certbot-apache certbot git unzip curl openssl jq php-curl php-xml php-mbstring
 
-# Install Composer if not already present
+# Install Composer if not already present or if outdated
 if ! command -v composer &> /dev/null; then
     echo "Installing Composer..."
     EXPECTED_SIGNATURE="$(wget -q -O - https://composer.github.io/installer.sig)"
@@ -77,7 +77,14 @@ if ! command -v composer &> /dev/null; then
     fi
     sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
     rm composer-setup.php
+else
+    echo "Composer already installed. Checking for updates..."
+    sudo composer self-update
 fi
+
+# Ensure correct permissions for composer cache (especially if run as root)
+sudo mkdir -p /var/www/.composer
+sudo chown -R www-data:www-data /var/www/.composer
 
 VENV_DIR="$WEBROOT/venv"
 python3 -m venv "$VENV_DIR"
@@ -93,18 +100,19 @@ sudo rsync -a "$REPO_DIR/config/" "$WEBROOT/config/"
 sudo rsync -a "$REPO_DIR/db/" "$WEBROOT/db/"
 sudo chown -R www-data:www-data "$WEBROOT"
 
-# Install PHP OpenID Connect library for SSO
+# Install PHP SAML library (onelogin/php-saml)
 cd "$WEBROOT"
 if [ ! -f composer.json ]; then
     cat <<EOC > composer.json
 {
   "require": {
-    "jumbojett/openid-connect-php": "^0.9.5"
+    "onelogin/php-saml": "^4.0"
   }
 }
 EOC
 fi
-composer install --no-interaction
+
+sudo -u www-data composer install --no-interaction || sudo -u www-data composer update --no-interaction
 
 sudo mysql -e "CREATE DATABASE IF NOT EXISTS $DBNAME;"
 sudo mysql -e "CREATE USER IF NOT EXISTS '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';"
@@ -167,4 +175,4 @@ echo "Site files: $WEBROOT"
 echo "Go to https://$DOMAIN/setup.php to continue setup."
 echo "Database credentials and cert paths have been added to $WEBROOT/config/config.php."
 echo "Python venv for automation: $VENV_DIR"
-echo "All Entra, Key Vault, SSO, and SMTP configuration will be handled in the web portal."
+echo "All Entra, Key Vault, SSO (SAML), and SMTP configuration will be handled in the web portal."

@@ -1,6 +1,5 @@
 <?php
 session_start();
-// If already logged in, redirect to the home page
 if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
     header("Location: index.php");
     exit;
@@ -51,8 +50,7 @@ if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
 <body>
 <div class="container" style="max-width:500px;">
     <h2>Sign In</h2>
-    <!-- Entra SSO button - always use .php extension unless you have .htaccess rewrite rules -->
-    <a class="wizard-guide-btn" href="/entra_sso/login.php"><b>Sign in with Entra SSO</b></a>
+    <a class="wizard-guide-btn" href="/saml/login.php"><b>Sign in with Entra SSO (SAML)</b></a>
     <hr>
     <div class="admin-login-section">
         <form method="post" action="admin_login.php">
