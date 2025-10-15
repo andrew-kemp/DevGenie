@@ -70,40 +70,95 @@ $conn->close();
 <head>
     <title>DevGenie Config Wizard</title>
     <link rel="stylesheet" href="assets/style.css">
+    <style>
+    .wizard-guide-btn {
+        display: block;
+        width: 90%;
+        max-width: 620px;
+        margin: 0 auto 2em auto;
+        padding: 20px;
+        font-size: 1.2em;
+        font-weight: 700;
+        text-align: center;
+        background: #f5faff;
+        color: #4263eb;
+        border: 2px solid #b9c6f2;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: background 0.15s, box-shadow 0.15s;
+        box-shadow: 0 2px 24px rgba(44,80,140,0.09);
+    }
+    .wizard-guide-btn:hover {
+        background: #e8f0fe;
+        color: #2c3f85;
+        border-color: #4263eb;
+        box-shadow: 0 4px 30px rgba(44,80,140,0.13);
+    }
+    .section-label {
+        font-weight: bold;
+        margin-top: 1.6em;
+        font-size: 1.07em;
+        color: #234;
+    }
+    </style>
+    <script>
+    function updateKvUri() {
+        var name = document.getElementById('kv_name').value.trim();
+        var uriInput = document.getElementById('kv_uri');
+        if(name.match(/^[a-zA-Z0-9-]+$/) && name.length >= 3 && name.length <= 24) {
+            uriInput.value = 'https://' + name + '.vault.azure.net/';
+        } else {
+            uriInput.value = '';
+        }
+    }
+    window.onload = function() {
+        updateKvUri();
+        if(document.getElementById('kv_name'))
+            document.getElementById('kv_name').addEventListener('input', updateKvUri);
+    };
+    </script>
 </head>
 <body>
-<div class="container">
+<div class="container" style="max-width: 740px;">
     <h2>Portal Configuration</h2>
+    <a href="setup_guide.php" class="wizard-guide-btn">Guide Me to Create App Registration and Key Vault</a>
+    <a href="sso_guide.php" class="wizard-guide-btn" style="margin-top:-1em;">Configure Azure Entra SSO</a>
+
+    <div style="margin:2em 0 1.5em 0; text-align:center; color:#567;">
+        <b>Already have an App Registration/Service Principal and Key Vault?</b>
+        <br>Enter the details below to connect your portal.
+    </div>
+
     <?php if ($feedback) echo "<div class='feedback'>$feedback</div>"; ?>
     <?php if ($error) echo "<div class='error'>$error</div>"; ?>
 
     <form method="post">
-        <h4>SMTP Settings</h4>
+        <span class="section-label">SMTP Settings</span>
         <label>SMTP Host: <input type="text" name="smtp_host" value="<?=esc($settings['smtp_host']??'')?>" required></label>
         <label>SMTP Port: <input type="text" name="smtp_port" value="<?=esc($settings['smtp_port']??'')?>" required></label>
         <label>SMTP Username: <input type="text" name="smtp_user" value="<?=esc($settings['smtp_user']??'')?>" required></label>
         <label>SMTP From Address: <input type="email" name="smtp_from" value="<?=esc($settings['smtp_from']??'')?>" required></label>
         <label>SMTP From Name: <input type="text" name="smtp_from_name" value="<?=esc($settings['smtp_from_name']??'')?>" required></label>
-        <h4>Azure & Entra Settings</h4>
+        <span class="section-label">Azure & Entra Manual Entry</span>
         <label>App Registration Name: <input type="text" name="app_reg_name" value="<?=esc($settings['app_reg_name']??'DevGenieSP-'.uniqid())?>" required></label>
-        <label>Key Vault Name: <input type="text" name="kv_name" value="<?=esc($settings['kv_name']??'devgeniekv'.rand(1000,9999))?>" required></label>
+        <label>Service Principal (App) Client ID: <input type="text" name="sp_client_id" value="<?=esc($settings['sp_client_id']??'')?>" required></label>
+        <label>Tenant ID: <input type="text" name="tenant_id" value="<?=esc($settings['tenant_id']??'')?>" required></label>
         <label>Azure Subscription ID: <input type="text" name="azure_subscription_id" value="<?=esc($settings['azure_subscription_id']??'')?>" required></label>
         <label>Resource Group: <input type="text" name="kv_rg" value="<?=esc($settings['kv_rg']??'')?>" required></label>
         <label>Resource Group Location: <input type="text" name="rg_location" value="<?=esc($settings['rg_location']??'uksouth')?>" required></label>
-        <label>Key Vault URI: <input type="text" name="kv_uri" value="<?=esc($settings['kv_uri']??'')?>" ></label>
-        <label>Service Principal (App) Client ID: <input type="text" name="sp_client_id" value="<?=esc($settings['sp_client_id']??'')?>" ></label>
-        <label>Tenant ID: <input type="text" name="tenant_id" value="<?=esc($settings['tenant_id']??'')?>" ></label>
+        <label>Key Vault Name:
+            <input type="text" name="kv_name" id="kv_name" value="<?=esc($settings['kv_name']??'devgeniekv'.rand(1000,9999))?>" required />
+        </label>
+        <label>Key Vault URI:
+            <input type="text" name="kv_uri" id="kv_uri" value="<?=esc($settings['kv_uri']??'')?>" readonly />
+        </label>
         <button type="submit" name="save_settings">Save All Settings</button>
     </form>
 
     <hr>
 
-    <a href="setup_guide.php" class="button" style="margin-bottom:1em;display:inline-block;">Guide Me to Create App Registration and Key Vault</a>
-
-    <hr>
-
     <form method="post">
-        <h4>Certificate Management</h4>
+        <span class="section-label">Certificate Management</span>
         <button type="submit" name="generate_cert">Generate new 4096-bit certificate</button>
     </form>
     <form method="post">
