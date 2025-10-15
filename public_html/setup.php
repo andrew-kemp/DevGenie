@@ -12,12 +12,13 @@ require_once(__DIR__ . '/../config/config.php');
 // Create DB connection
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
-    die("Database connection failed: " . $conn->connect_error);
+    echo "<p class='error'>Database connection failed: " . htmlspecialchars($conn->connect_error) . "</p>";
+    exit;
 }
 
 // If admin exists, redirect to index
 $result = $conn->query("SELECT id FROM admins LIMIT 1");
-if ($result->num_rows > 0) {
+if ($result && $result->num_rows > 0) {
     header("Location: /index.php");
     exit;
 }
@@ -37,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_setup'])) {
             header('Location: /setup.php?step=2');
             exit;
         } else {
-            $error = "Failed to create admin. Error: " . $stmt->error;
+            $error = "Failed to create admin. Error: " . htmlspecialchars($stmt->error);
         }
     } else {
         $error = "All fields are required.";
