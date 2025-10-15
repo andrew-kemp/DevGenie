@@ -1,17 +1,19 @@
 <?php
-require_once(__DIR__ . '/../config/config.php');
+session_start();
 
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-$result = $conn->query("SELECT id FROM admins LIMIT 1");
-if (!$result || $result->num_rows === 0) {
-    $conn->close();
-    header("Location: setup.php");
+// If not logged in, redirect to login page
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['admin_id'])) {
+    header("Location: login.php");
     exit;
 }
-$conn->close();
 
-session_start();
-$logged_in = isset($_SESSION['admin_id']);
+// Load user info if SSO user logged in
+$user = null;
+if (isset($_SESSION['user_id'])) {
+    require_once(__DIR__ . '/../db/users.php');
+    $user = user_by_id($_SESSION['user_id']);
+}
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -20,17 +22,19 @@ $logged_in = isset($_SESSION['admin_id']);
     <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-<div class="container">
-    <h1>Welcome to DevGenie Portal!</h1>
-    <?php if ($logged_in): ?>
-        <ul>
-            <li><a href="config_wizard.php">Initial Setup & Configuration Wizard</a></li>
-            <li><a href="settings.php">View/Update Portal Settings</a></li>
-            <li><a href="logout.php">Log out</a></li>
-        </ul>
-    <?php else: ?>
-        <p><a href="login.php">Admin Login</a></p>
+<div class="container" style="max-width:700px;">
+    <h2>Welcome to DevGenie Portal</h2>
+    <?php if ($user): ?>
+        <p>Hello, <b><?=htmlspecialchars($user['display_name'])?></b> (<?=htmlspecialchars($user['dev_email'])?>)!</p>
+        <?php if ($user['is_admin']): ?>
+            <p><a href="admin_users.php">Admin User Management</a></p>
+        <?php endif; ?>
+        <p><a href="profile.php">My Profile</a></p>
+    <?php elseif (isset($_SESSION['admin_id'])): ?>
+        <p>Logged in as <b>admin</b>.</p>
+        <p><a href="admin_users.php">Admin User Management</a></p>
     <?php endif; ?>
+    <p><a href="logout.php">Logout</a></p>
 </div>
 </body>
 </html>
