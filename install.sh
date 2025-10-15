@@ -95,8 +95,16 @@ sudo chown -R www-data:www-data "$WEBROOT"
 
 # Install PHP OpenID Connect library for SSO
 cd "$WEBROOT"
-composer install || composer update
-composer require jumbojett/openid-connect-php
+if [ ! -f composer.json ]; then
+    cat <<EOC > composer.json
+{
+  "require": {
+    "jumbojett/openid-connect-php": "^0.9.5"
+  }
+}
+EOC
+fi
+composer install --no-interaction
 
 sudo mysql -e "CREATE DATABASE IF NOT EXISTS $DBNAME;"
 sudo mysql -e "CREATE USER IF NOT EXISTS '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';"
