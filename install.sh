@@ -30,7 +30,6 @@ if [ -d "$WEBROOT" ]; then
     case "$UPD_CHOICE" in
         [Uu]* )
             echo "Will update the code and dependencies only..."
-            # Only update code and dependencies, do not destroy DB/files
             ;;
         [Rr]* )
             echo "WARNING: This will REMOVE EVERYTHING for $WEBROOT and DB $DBNAME."
@@ -63,12 +62,29 @@ fi
 
 sudo apt update
 sudo apt upgrade -y
-sudo apt install -y apache2 mysql-server php php-mysql libapache2-mod-php python3 python3-venv python3-certbot-apache certbot git unzip curl openssl jq
+sudo apt install -y apache2 mysql-server php php-mysql libapache2-mod-php python3 python3-venv python3-certbot-apache certbot git unzip curl openssl jq php-curl php-xml php-mbstring
+
+# Install Composer if not already present
+if ! command -v composer &> /dev/null; then
+    echo "Installing Composer..."
+    EXPECTED_SIGNATURE="$(wget -q -O - https://composer.github.io/installer.sig)"
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    ACTUAL_SIGNATURE="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+    if [ "$EXPECTED_SIGNATURE" != "$ACTUAL_SIGNATURE" ]; then
+        >&2 echo 'ERROR: Invalid installer signature'
+        rm composer-setup.php
+        exit 1
+    fi
+    sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+    rm composer-setup.php
+fi
 
 VENV_DIR="$WEBROOT/venv"
 python3 -m venv "$VENV_DIR"
 "$VENV_DIR/bin/pip" install --upgrade pip
-"$VENV_DIR/bin/pip" install -r "$REPO_DIR/requirements.txt"
+if [ -f "$REPO_DIR/requirements.txt" ]; then
+    "$VENV_DIR/bin/pip" install -r "$REPO_DIR/requirements.txt"
+fi
 
 sudo mkdir -p "$WEBROOT"
 sudo rsync -a "$REPO_DIR/public_html/" "$WEBROOT/public_html/"
@@ -76,6 +92,11 @@ sudo rsync -a "$REPO_DIR/public_html/assets/" "$WEBROOT/public_html/assets/"
 sudo rsync -a "$REPO_DIR/config/" "$WEBROOT/config/"
 sudo rsync -a "$REPO_DIR/db/" "$WEBROOT/db/"
 sudo chown -R www-data:www-data "$WEBROOT"
+
+# Install PHP OpenID Connect library for SSO
+cd "$WEBROOT"
+composer install || composer update
+composer require jumbojett/openid-connect-php
 
 sudo mysql -e "CREATE DATABASE IF NOT EXISTS $DBNAME;"
 sudo mysql -e "CREATE USER IF NOT EXISTS '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';"
