@@ -76,6 +76,15 @@ sudo mysql -e "CREATE DATABASE IF NOT EXISTS $DBNAME;"
 sudo mysql -e "CREATE USER IF NOT EXISTS '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';"
 sudo mysql -e "GRANT ALL PRIVILEGES ON $DBNAME.* TO '$DBUSER'@'localhost';"
 sudo mysql -e "FLUSH PRIVILEGES;"
+
+# Ensure the flexible settings table exists (key-value)
+sudo mysql "$DBNAME" -e "
+CREATE TABLE IF NOT EXISTS settings (
+  setting_key varchar(191) NOT NULL PRIMARY KEY,
+  setting_value text NOT NULL
+);
+"
+
 sudo mysql "$DBNAME" < "$WEBROOT/db/schema.sql"
 
 sudo mkdir -p "$CERT_DIR"
@@ -99,6 +108,7 @@ define('KEY_PATH', '$KEY_PATH');
 ?>
 EOF
 
+# Store only the certificate and key path settings for now
 sudo mysql "$DBNAME" -e "
 INSERT INTO settings (setting_key, setting_value) VALUES
 ('cert_path', '$CERT_PATH'),
