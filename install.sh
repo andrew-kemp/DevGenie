@@ -5,6 +5,9 @@ echo "==== DevGenie Automated Installer ===="
 
 REPO_URL="https://github.com/andrew-kemp/DevGenie.git"
 REPO_DIR="/tmp/DevGenie"
+CERT_DIR="/etc/devgenie"
+CERT_PATH="$CERT_DIR/keyvault.crt"
+KEY_PATH="$CERT_DIR/keyvault.key"
 
 # 1. Prompt for all details
 read -p "Enter the full domain name for this instance (e.g., devgenie.andykemp.cloud): " DOMAIN
@@ -54,10 +57,10 @@ else
     cd -
 fi
 
-# 4. Install system dependencies (no postfix, no Azure CLI)
+# 4. Install system dependencies
 sudo apt update
 sudo apt upgrade -y
-sudo apt install -y apache2 mysql-server php php-mysql libapache2-mod-php python3 python3-venv python3-certbot-apache certbot git unzip curl
+sudo apt install -y apache2 mysql-server php php-mysql libapache2-mod-php python3 python3-venv python3-certbot-apache certbot git unzip curl openssl
 
 # 5. Python venv for automation tools
 VENV_DIR="$WEBROOT/venv"
@@ -65,7 +68,7 @@ python3 -m venv "$VENV_DIR"
 "$VENV_DIR/bin/pip" install --upgrade pip
 "$VENV_DIR/bin/pip" install -r "$REPO_DIR/requirements.txt"
 
-# 6. Copy site files (force all assets, not just public_html)
+# 6. Copy site files
 sudo mkdir -p "$WEBROOT"
 sudo rsync -a "$REPO_DIR/public_html/" "$WEBROOT/public_html/"
 sudo rsync -a "$REPO_DIR/public_html/assets/" "$WEBROOT/public_html/assets/"
@@ -73,24 +76,37 @@ sudo rsync -a "$REPO_DIR/config/" "$WEBROOT/config/"
 sudo rsync -a "$REPO_DIR/db/" "$WEBROOT/db/"
 sudo chown -R www-data:www-data "$WEBROOT"
 
-# 7. MySQL DB/User setup (fresh)
+# 7. MySQL DB/User setup
 sudo mysql -e "CREATE DATABASE IF NOT EXISTS $DBNAME;"
 sudo mysql -e "CREATE USER IF NOT EXISTS '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';"
 sudo mysql -e "GRANT ALL PRIVILEGES ON $DBNAME.* TO '$DBUSER'@'localhost';"
 sudo mysql -e "FLUSH PRIVILEGES;"
 sudo mysql "$DBNAME" < "$WEBROOT/db/schema.sql"
 
-# 8. Write DB config to config.php
+# 8. Generate cert/key for SP and Key Vault if not present
+sudo mkdir -p "$CERT_DIR"
+if [ ! -f "$KEY_PATH" ] || [ ! -f "$CERT_PATH" ]; then
+    sudo openssl req -x509 -newkey rsa:4096 -keyout "$KEY_PATH" -out "$CERT_PATH" -days 3650 -nodes -subj "/CN=DevGenieKeyVault"
+    sudo chmod 600 "$KEY_PATH"
+    sudo chmod 644 "$CERT_PATH"
+    echo "Generated SP/Key Vault certificate and key."
+else
+    echo "Certificate and key already exist at $CERT_PATH and $KEY_PATH"
+fi
+
+# 9. Write DB config to config.php (including cert paths)
 cat <<EOF | sudo tee "$WEBROOT/config/config.php" > /dev/null
 <?php
 define('DB_HOST', 'localhost');
 define('DB_USER', '$DBUSER');
 define('DB_PASS', '$DBPASS');
 define('DB_NAME', '$DBNAME');
+define('CERT_PATH', '$CERT_PATH');
+define('KEY_PATH', '$KEY_PATH');
 ?>
 EOF
 
-# 9. Apache VirtualHost
+# 10. Apache VirtualHost
 VHOST_CONF="/etc/apache2/sites-available/$DOMAIN.conf"
 sudo bash -c "cat <<EOF > $VHOST_CONF
 <VirtualHost *:80>
@@ -108,14 +124,14 @@ sudo a2ensite "$DOMAIN"
 sudo a2enmod rewrite
 sudo systemctl reload apache2
 
-# 10. LetsEncrypt SSL
+# 11. LetsEncrypt SSL
 sudo certbot --apache -d $DOMAIN --non-interactive --agree-tos -m admin@$DOMAIN
 
-# 11. Output credentials for config.php and next steps
+# 12. Output credentials for config.php and next steps
 echo "==== INSTALL COMPLETE ===="
 echo "Site files: $WEBROOT"
 echo "Go to https://$DOMAIN/setup.php to continue setup."
-echo "Database credentials have been added to $WEBROOT/config/config.php."
+echo "Database credentials and cert paths have been added to $WEBROOT/config/config.php."
 echo ""
 echo "Python venv for automation: $VENV_DIR"
 echo "You do NOT need Postfix or local mail!"
