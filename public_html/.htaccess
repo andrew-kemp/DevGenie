@@ -1,2 +1,4 @@
 RewriteEngine On
-# Application handles redirects, this is just for clean URLs if needed.
+RewriteBase /entra_sso/
+RewriteRule ^login$ login.php [L]
+RewriteRule ^callback$ callback.php [L]

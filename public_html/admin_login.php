@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 require_once(__DIR__ . '/../config/config.php');
 
@@ -26,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['admin_id'] = $admin['id'];
             $_SESSION['admin_username'] = $admin['username'];
             $_SESSION['is_admin'] = true;
-            header("Location: dashboard.php");
+            header("Location: index.php");
             exit;
         } else {
             $error = "Invalid credentials.";
