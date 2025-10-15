@@ -1,3 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DevGenie Setup</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="container">
 <?php
 require_once(__DIR__ . '/../config/config.php');
 
@@ -75,20 +83,14 @@ if (
 
 $step = isset($_GET['step']) ? $_GET['step'] : 1;
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>DevGenie Setup</title>
-</head>
-<body>
 <?php if ($step == 1): ?>
     <h2>Step 1: Create Admin Account</h2>
-    <?php if ($error) echo "<p style='color:red;'>$error</p>"; ?>
+    <?php if ($error) echo "<p class='error'>$error</p>"; ?>
     <form method="post">
         <input type="hidden" name="admin_setup" value="1">
-        <label>Admin Username: <input type="text" name="username" required></label><br>
-        <label>Admin Email: <input type="email" name="email" required></label><br>
-        <label>Password: <input type="password" name="password" required></label><br>
+        <label>Admin Username: <input type="text" name="username" required></label>
+        <label>Admin Email: <input type="email" name="email" required></label>
+        <label>Password: <input type="password" name="password" required></label>
         <button type="submit">Set Up Admin</button>
     </form>
 <?php elseif ($step == 2): ?>
@@ -96,19 +98,20 @@ $step = isset($_GET['step']) ? $_GET['step'] : 1;
     <form method="post">
         <input type="hidden" name="app_config" value="1">
         <h4>SMTP Settings</h4>
-        <label>SMTP Host: <input type="text" name="smtp_host" required></label><br>
-        <label>SMTP Port: <input type="text" name="smtp_port" required></label><br>
-        <label>SMTP Username: <input type="text" name="smtp_user" required></label><br>
-        <label>SMTP Password: <input type="password" name="smtp_pass" required></label><br>
-        <label>SMTP From Address: <input type="email" name="smtp_from" required></label><br>
+        <label>SMTP Host: <input type="text" name="smtp_host" required></label>
+        <label>SMTP Port: <input type="text" name="smtp_port" required></label>
+        <label>SMTP Username: <input type="text" name="smtp_user" required></label>
+        <label>SMTP Password: <input type="password" name="smtp_pass" required></label>
+        <label>SMTP From Address: <input type="email" name="smtp_from" required></label>
         <h4>Azure/Key Vault</h4>
-        <label>Key Vault URI: <input type="text" name="keyvault_uri" required></label><br>
-        <label>Azure App (client) ID: <input type="text" name="client_id" required></label><br>
-        <label>Azure Tenant ID: <input type="text" name="tenant_id" required></label><br>
-        <label>Cert Path: <input type="text" name="cert_path" value="/etc/devgenie/keyvault.crt" required></label><br>
-        <label>Key Path: <input type="text" name="key_path" value="/etc/devgenie/keyvault.key" required></label><br>
+        <label>Key Vault URI: <input type="text" name="keyvault_uri" required></label>
+        <label>Azure App (client) ID: <input type="text" name="client_id" required></label>
+        <label>Azure Tenant ID: <input type="text" name="tenant_id" required></label>
+        <label>Cert Path: <input type="text" name="cert_path" value="/etc/devgenie/keyvault.crt" required></label>
+        <label>Key Path: <input type="text" name="key_path" value="/etc/devgenie/keyvault.key" required></label>
         <button type="submit">Save Settings</button>
     </form>
 <?php endif; ?>
+</div>
 </body>
 </html>

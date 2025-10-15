@@ -1,3 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DevGenie Portal</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="container">
 <?php
 require_once(__DIR__ . '/../config/config.php');
 
@@ -17,3 +25,6 @@ if ($result->num_rows === 0) {
 echo "<h1>Welcome to DevGenie Portal!</h1>";
 $conn->close();
 ?>
+</div>
+</body>
+</html>

@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    background: #f4f8fb;
+    margin: 0;
+    padding: 0;
+    color: #222;
+}
+
+.container {
+    max-width: 420px;
+    margin: 60px auto 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(60,72,88,0.12);
+    padding: 2.5rem 2rem 2rem 2rem;
+}
+
+h1, h2, h4 {
+    color: #2b4a77;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+form label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+form input[type="text"],
+form input[type="email"],
+form input[type="password"] {
+    width: 100%;
+    padding: 0.65rem;
+    margin-bottom: 1.1rem;
+    border: 1px solid #d1d9e6;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #f9fbfc;
+    transition: border .2s;
+}
+form input:focus {
+    border-color: #3e7bee;
+    outline: none;
+}
+
+button {
+    background: #3e7bee;
+    color: #fff;
+    border: none;
+    padding: 0.7rem 1.7rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .18s;
+    margin-top: 0.5rem;
+}
+
+button:hover {
+    background: #244e9b;
+}
+
+p.error {
+    color: #d32f2f;
+    background: #ffeaea;
+    border-left: 4px solid #d32f2f;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 3px;
+}
