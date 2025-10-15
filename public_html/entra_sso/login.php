@@ -1,52 +1,36 @@
 <?php
 session_start();
-if (isset($_SESSION['user_id'])) {
-    header("Location: index.php");
-    exit;
+require_once(__DIR__ . '/../../config/config.php');
+
+// Fetch SSO config from settings table
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+$res = $conn->query("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'sso_%'");
+$settings = [];
+while ($row = $res->fetch_assoc()) {
+    $settings[$row['setting_key']] = $row['setting_value'];
 }
+$conn->close();
+
+if (empty($settings['sso_client_id']) || empty($settings['sso_tenant_id'])) {
+    die("SSO not configured. Please contact your administrator.");
+}
+
+require_once(__DIR__ . '/../../vendor/autoload.php');
+$oidc_url = !empty($settings['sso_metadata_url']) ?
+    $settings['sso_metadata_url'] :
+    "https://login.microsoftonline.com/{$settings['sso_tenant_id']}/v2.0/.well-known/openid-configuration";
+$redirect_uri = !empty($settings['sso_redirect_uri']) ?
+    $settings['sso_redirect_uri'] :
+    (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}/entra_sso/callback.php";
+
+$oidc = new Jumbojett\OpenIDConnectClient(
+    $oidc_url,
+    $settings['sso_client_id'],
+    $settings['sso_client_secret'] ?? ''
+);
+$oidc->setRedirectURL($redirect_uri);
+$scope = !empty($settings['sso_scopes']) ? $settings['sso_scopes'] : 'openid profile email';
+$oidc->addScope($scope);
+
+$oidc->authenticate();
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Sign In - DevGenie Portal</title>
-    <link rel="stylesheet" href="assets/style.css">
-    <style>
-    .wizard-guide-btn {
-        display: block;
-        width: 90%;
-        max-width: 400px;
-        margin: 1.5em auto;
-        padding: 20px;
-        font-size: 1.2em;
-        font-weight: 700;
-        text-align: center;
-        background: #f5faff;
-        color: #4263eb;
-        border: 2px solid #b9c6f2;
-        border-radius: 10px;
-        text-decoration: none;
-        transition: background 0.15s, box-shadow 0.15s;
-        box-shadow: 0 2px 24px rgba(44,80,140,0.09);
-    }
-    .wizard-guide-btn:hover {
-        background: #e8f0fe;
-        color: #2c3f85;
-        border-color: #4263eb;
-        box-shadow: 0 4px 30px rgba(44,80,140,0.13);
-    }
-    </style>
-</head>
-<body>
-<div class="container" style="max-width:400px;">
-    <h2>Sign In</h2>
-    <a class="wizard-guide-btn" href="/entra_sso/login"><b>Sign in with Entra SSO</b></a>
-    <hr>
-    <form method="post" action="admin_login.php">
-        <h4>Admin Login (local)</h4>
-        <label>Username: <input type="text" name="username"></label>
-        <label>Password: <input type="password" name="password"></label>
-        <button type="submit">Sign In (Admin)</button>
-    </form>
-</div>
-</body>
-</html>

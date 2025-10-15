@@ -1,7 +1,8 @@
 <?php
 session_start();
-if (isset($_SESSION['user_id'])) {
-    header("Location: dashboard.php");
+// If already logged in, redirect to the home page
+if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
+    header("Location: index.php");
     exit;
 }
 ?>
@@ -34,19 +35,39 @@ if (isset($_SESSION['user_id'])) {
         border-color: #4263eb;
         box-shadow: 0 4px 30px rgba(44,80,140,0.13);
     }
+    .admin-login-section {
+        max-width: 400px;
+        margin: 2em auto;
+        padding: 2em;
+        background: #f9f9f9;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+    hr {
+        margin: 2em 0;
+    }
     </style>
 </head>
 <body>
-<div class="container" style="max-width:400px;">
+<div class="container" style="max-width:500px;">
     <h2>Sign In</h2>
-    <a class="wizard-guide-btn" href="/entra_sso/login"><b>Sign in with Entra SSO</b></a>
+    <!-- Entra SSO button - always use .php extension unless you have .htaccess rewrite rules -->
+    <a class="wizard-guide-btn" href="/entra_sso/login.php"><b>Sign in with Entra SSO</b></a>
     <hr>
-    <form method="post" action="admin_login.php">
-        <h4>Admin Login (local)</h4>
-        <label>Username: <input type="text" name="username"></label>
-        <label>Password: <input type="password" name="password"></label>
-        <button type="submit">Sign In (Admin)</button>
-    </form>
+    <div class="admin-login-section">
+        <form method="post" action="admin_login.php">
+            <h4>Admin Login (local)</h4>
+            <label>Username:
+                <input type="text" name="username" autocomplete="username" required>
+            </label>
+            <br>
+            <label>Password:
+                <input type="password" name="password" autocomplete="current-password" required>
+            </label>
+            <br>
+            <button type="submit">Sign In (Admin)</button>
+        </form>
+    </div>
 </div>
 </body>
 </html>
