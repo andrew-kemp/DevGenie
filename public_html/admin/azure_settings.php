@@ -4,7 +4,7 @@ if (!isset($_SESSION['admin_id'])) {
     header("Location: ../login.php");
     exit;
 }
-require_once(__DIR__ . '/../config/config.php');
+require_once(__DIR__ . '/../../config/config.php');
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

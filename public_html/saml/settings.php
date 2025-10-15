@@ -1,5 +1,5 @@
 <?php
-require_once(__DIR__ . '/../config/config.php');
+require_once(__DIR__ . '/../../config/config.php');
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
 $res = $conn->query("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'saml_%' OR setting_key LIKE 'idp_%'");
