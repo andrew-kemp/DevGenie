@@ -1,74 +1,97 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-
 body {
-    font-family: 'Roboto', Arial, sans-serif;
-    background: #f4f8fb;
-    margin: 0;
-    padding: 0;
-    color: #222;
+    background: #f6f9fc;
+    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
 }
 
 .container {
-    max-width: 420px;
-    margin: 60px auto 0 auto;
+    max-width: 500px;
+    margin: 40px auto;
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(60,72,88,0.12);
-    padding: 2.5rem 2rem 2rem 2rem;
+    border-radius: 18px;
+    box-shadow: 0 6px 32px rgba(44,80,140,0.13);
+    padding: 40px 36px 32px 36px;
 }
 
-h1, h2, h4 {
-    color: #2b4a77;
-    margin-bottom: 1rem;
+h2, h1 {
+    color: #24334d;
     font-weight: 700;
-    letter-spacing: -1px;
+    margin-bottom: 1.2em;
 }
-
-form label {
+h4 {
+    margin: 1.8em 0 0.5em 0;
+    color: #2b4a6f;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+label {
     display: block;
-    margin-bottom: 0.25rem;
+    margin-bottom: 22px;
+    font-size: 1em;
+    color: #24334d;
     font-weight: 500;
 }
-
-form input[type="text"],
-form input[type="email"],
-form input[type="password"] {
+input[type="text"],
+input[type="email"],
+input[type="password"] {
     width: 100%;
-    padding: 0.65rem;
-    margin-bottom: 1.1rem;
-    border: 1px solid #d1d9e6;
-    border-radius: 6px;
-    font-size: 1rem;
-    background: #f9fbfc;
-    transition: border .2s;
+    padding: 11px 12px;
+    border-radius: 8px;
+    border: 1px solid #e0e4ea;
+    font-size: 1em;
+    margin-top: 7px;
+    transition: border-color 0.2s;
+    background: #f7faff;
 }
-form input:focus {
-    border-color: #3e7bee;
+input:focus {
+    border: 1.5px solid #6390e2;
     outline: none;
+    background: #fff;
 }
-
 button {
-    background: #3e7bee;
+    background: #4c6ef5;
     color: #fff;
     border: none;
-    padding: 0.7rem 1.7rem;
-    border-radius: 6px;
-    font-size: 1rem;
+    padding: 12px 28px;
+    border-radius: 7px;
     font-weight: 600;
+    font-size: 1em;
     cursor: pointer;
-    transition: background .18s;
-    margin-top: 0.5rem;
+    margin-top: 6px;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 10px rgba(44,80,140,0.07);
 }
-
 button:hover {
-    background: #244e9b;
+    background: #274baf;
 }
-
-p.error {
-    color: #d32f2f;
+hr {
+    margin: 2.2em 0 1.4em 0;
+    border: none;
+    height: 1px;
+    background: #e5e9f1;
+}
+.feedback {
+    background: #e6f7f8;
+    border: 1px solid #67d3e0;
+    color: #226a75;
+    border-radius: 7px;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-size: 1em;
+}
+.error {
+    color: #c0392b;
+    padding: 8px 12px;
     background: #ffeaea;
-    border-left: 4px solid #d32f2f;
-    padding: 0.6rem 1rem;
-    margin-bottom: 1rem;
-    border-radius: 3px;
+    border: 1px solid #e9b6b6;
+    border-radius: 5px;
+    margin-bottom: 18px;
+    font-size: 1em;
+}
+a {
+    color: #4c6ef5;
+    text-decoration: none;
+    font-weight: 600;
+}
+a:hover {
+    text-decoration: underline;
 }
