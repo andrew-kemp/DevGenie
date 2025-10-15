@@ -146,11 +146,22 @@ sudo -u www-data composer install --no-interaction || sudo -u www-data composer 
 
 sudo mysql -e "CREATE DATABASE IF NOT EXISTS $DBNAME;"
 sudo mysql -e "CREATE USER IF NOT EXISTS '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';"
+sudo mysql -e "ALTER USER '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';"
 sudo mysql -e "GRANT ALL PRIVILEGES ON $DBNAME.* TO '$DBUSER'@'localhost';"
 sudo mysql -e "FLUSH PRIVILEGES;"
 
 # 4. Create all tables using db/schema.sql (merged schema)
 sudo mysql "$DBNAME" < "$WEBROOT/db/schema.sql"
+
+# 5. Insert default SAML SP settings
+sudo mysql -D "$DBNAME" -e "
+INSERT INTO settings (setting_key, setting_value) VALUES
+  ('saml_entity_id',    'https://$DOMAIN/saml/metadata.php'),
+  ('saml_acs_url',      'https://$DOMAIN/saml/acs.php'),
+  ('saml_sls_url',      'https://$DOMAIN/saml/sls.php'),
+  ('saml_nameid_format','urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress')
+ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
+"
 
 sudo mkdir -p "$CERT_DIR"
 if [ ! -f "$KEY_PATH" ] || [ ! -f "$CERT_PATH" ]; then
