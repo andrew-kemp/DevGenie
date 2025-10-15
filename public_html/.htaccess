@@ -1,0 +1,2 @@
+RewriteEngine On
+# Application handles redirects, this is just for clean URLs if needed.
