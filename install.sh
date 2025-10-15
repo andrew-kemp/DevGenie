@@ -80,7 +80,17 @@ sudo mysql -e "GRANT ALL PRIVILEGES ON $DBNAME.* TO '$DBUSER'@'localhost';"
 sudo mysql -e "FLUSH PRIVILEGES;"
 sudo mysql "$DBNAME" < "$WEBROOT/db/schema.sql"
 
-# 8. Apache VirtualHost
+# 8. Write DB config to config.php
+cat <<EOF | sudo tee "$WEBROOT/config/config.php" > /dev/null
+<?php
+define('DB_HOST', 'localhost');
+define('DB_USER', '$DBUSER');
+define('DB_PASS', '$DBPASS');
+define('DB_NAME', '$DBNAME');
+?>
+EOF
+
+# 9. Apache VirtualHost
 VHOST_CONF="/etc/apache2/sites-available/$DOMAIN.conf"
 sudo bash -c "cat <<EOF > $VHOST_CONF
 <VirtualHost *:80>
@@ -98,17 +108,14 @@ sudo a2ensite "$DOMAIN"
 sudo a2enmod rewrite
 sudo systemctl reload apache2
 
-# 9. LetsEncrypt SSL
+# 10. LetsEncrypt SSL
 sudo certbot --apache -d $DOMAIN --non-interactive --agree-tos -m admin@$DOMAIN
 
-# 10. Output credentials for config.php and next steps
+# 11. Output credentials for config.php and next steps
 echo "==== INSTALL COMPLETE ===="
 echo "Site files: $WEBROOT"
 echo "Go to https://$DOMAIN/setup.php to continue setup."
-echo "Database credentials (add to config/config.php):"
-echo "  DB Name: $DBNAME"
-echo "  DB User: $DBUSER"
-echo "  DB Pass: $DBPASS"
+echo "Database credentials have been added to $WEBROOT/config/config.php."
 echo ""
 echo "Python venv for automation: $VENV_DIR"
 echo "You do NOT need Postfix or local mail!"
