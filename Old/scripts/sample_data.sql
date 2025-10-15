@@ -1,2 +1,0 @@
--- Placeholder SQL for sample data
--- INSERT INTO users (name, email) VALUES ('Test User', 'test@example.com');

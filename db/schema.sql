@@ -24,3 +24,16 @@ CREATE TABLE IF NOT EXISTS requests (
     requester_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    display_name VARCHAR(200) NOT NULL,
+    dev_email VARCHAR(255) NOT NULL,
+    prod_email VARCHAR(255) DEFAULT NULL,
+    notification_email_preference ENUM('dev','prod','both') DEFAULT 'dev',
+    external_id VARCHAR(120),
+    is_admin TINYINT(1) DEFAULT 0,
+    local_password_hash VARCHAR(255),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_dev_email (dev_email)
+);

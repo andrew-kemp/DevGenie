@@ -77,14 +77,7 @@ sudo mysql -e "CREATE USER IF NOT EXISTS '$DBUSER'@'localhost' IDENTIFIED BY '$D
 sudo mysql -e "GRANT ALL PRIVILEGES ON $DBNAME.* TO '$DBUSER'@'localhost';"
 sudo mysql -e "FLUSH PRIVILEGES;"
 
-# Ensure the flexible settings table exists (key-value)
-sudo mysql "$DBNAME" -e "
-CREATE TABLE IF NOT EXISTS settings (
-  setting_key varchar(191) NOT NULL PRIMARY KEY,
-  setting_value text NOT NULL
-);
-"
-
+# 4. Create all tables using db/schema.sql (merged schema)
 sudo mysql "$DBNAME" < "$WEBROOT/db/schema.sql"
 
 sudo mkdir -p "$CERT_DIR"
