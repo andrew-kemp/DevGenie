@@ -22,29 +22,34 @@ DBPASS=$(openssl rand -base64 20)
 read -p "Enter the web folder location [$DEFAULT_WEBROOT]: " WEBROOT
 WEBROOT=${WEBROOT:-$DEFAULT_WEBROOT}
 
-# 2. Check for/removal of existing resources
-FOLDER_EXISTS=0
-DB_EXISTS=0
-USER_EXISTS=0
-
-if [ -d "$WEBROOT" ]; then FOLDER_EXISTS=1; fi
-DB_EXISTS=$(sudo mysql -N -e "SHOW DATABASES LIKE '$DBNAME';" | grep -c "$DBNAME" || true)
-USER_EXISTS=$(sudo mysql -N -e "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '$DBUSER');" | tail -n1)
-
-if [ "$FOLDER_EXISTS" -eq 1 ] || [ "$DB_EXISTS" -eq 1 ] || [ "$USER_EXISTS" -eq 1 ]; then
-    echo "WARNING: One or more of the following exist and will be removed if you continue:"
-    [ "$FOLDER_EXISTS" -eq 1 ] && echo " - Web folder: $WEBROOT"
-    [ "$DB_EXISTS" -eq 1 ] && echo " - MySQL database: $DBNAME"
-    [ "$USER_EXISTS" -eq 1 ] && echo " - MySQL user: $DBUSER"
-    read -p "Do you want to REMOVE ALL of the above and start fresh? (y/N): " REMOVE_ALL
-    if [[ "$REMOVE_ALL" =~ ^[Yy]$ ]]; then
-        [ "$FOLDER_EXISTS" -eq 1 ] && sudo rm -rf "$WEBROOT" && echo "Removed $WEBROOT."
-        [ "$DB_EXISTS" -eq 1 ] && sudo mysql -e "DROP DATABASE $DBNAME;" && echo "Dropped database $DBNAME."
-        [ "$USER_EXISTS" -eq 1 ] && sudo mysql -e "DROP USER '$DBUSER'@'localhost';" && echo "Dropped user $DBUSER."
-    else
-        echo "Aborting installation. Nothing was changed."
-        exit 1
-    fi
+# 2. Update or reinstall logic
+if [ -d "$WEBROOT" ]; then
+    echo "It looks like $WEBROOT already exists."
+    echo "Do you want to [U]pdate (keep DB/files), [R]einstall (WIPE ALL), or [C]ancel?"
+    read -p "[U]pdate/[R]einstall/[C]ancel: " UPD_CHOICE
+    case "$UPD_CHOICE" in
+        [Uu]* )
+            echo "Will update the code and dependencies only..."
+            # Only update code and dependencies, do not destroy DB/files
+            ;;
+        [Rr]* )
+            echo "WARNING: This will REMOVE EVERYTHING for $WEBROOT and DB $DBNAME."
+            read -p "Are you absolutely sure? (type YES): " SURE
+            if [ "$SURE" = "YES" ]; then
+                sudo rm -rf "$WEBROOT"
+                sudo mysql -e "DROP DATABASE IF EXISTS $DBNAME;"
+                sudo mysql -e "DROP USER IF EXISTS '$DBUSER'@'localhost';"
+                echo "All site files and database have been removed."
+            else
+                echo "Cancelled."
+                exit 1
+            fi
+            ;;
+        * )
+            echo "Cancelled."
+            exit 1
+            ;;
+    esac
 fi
 
 # 3. Clone repo, install deps, venv, etc.
@@ -133,4 +138,4 @@ echo "Site files: $WEBROOT"
 echo "Go to https://$DOMAIN/setup.php to continue setup."
 echo "Database credentials and cert paths have been added to $WEBROOT/config/config.php."
 echo "Python venv for automation: $VENV_DIR"
-echo "All Azure, Key Vault, SSO, and SMTP configuration will be handled in the web portal."
+echo "All Entra, Key Vault, SSO, and SMTP configuration will be handled in the web portal."
