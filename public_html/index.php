@@ -47,16 +47,23 @@ if (isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-<div class="container" style="max-width:700px;">
-    <h2>Welcome to DevGenie Portal</h2>
+<div class="container">
+    <div class="portal-welcome">Welcome to DevGenie Portal</div>
     <?php if ($user): ?>
-        <p>Hello, <b><?=htmlspecialchars($user['display_name'])?></b> (<?=htmlspecialchars($user['dev_email'])?>)!</p>
+        <p>
+            Hello, <b><?=htmlspecialchars($user['display_name'])?></b>
+            (<?=htmlspecialchars($user['dev_email'])?>)!
+        </p>
+        <div style="margin: 2em 0 1.3em 0;">
+            <a class="portal-profile-link" href="profile.php">My Profile</a>
+            <a href="logout.php">Logout</a>
+        </div>
         <?php if ($user['is_admin']): ?>
-            <p><a href="admin/index.php">Go to Admin Dashboard</a></p>
+            <div style="margin-top:1.5em;">
+                <a href="admin/index.php" style="background:#f3e8ff; color:#7c3aed; border-radius:7px; padding:7px 17px; font-weight:600; text-decoration:none; border:1.3px solid #e9d5ff;">Go to Admin Dashboard</a>
+            </div>
         <?php endif; ?>
-        <p><a href="profile.php">My Profile</a></p>
     <?php endif; ?>
-    <p><a href="logout.php">Logout</a></p>
 </div>
 </body>
 </html>
