@@ -4,51 +4,71 @@ if (!isset($_SESSION['admin_id'])) {
     header("Location: ../login.php");
     exit;
 }
-require_once(__DIR__ . '/../../config/config.php');
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $fields = ['azure_client_id', 'azure_tenant_id', 'azure_client_secret'];
-    foreach ($fields as $f) {
-        $v = trim($_POST[$f] ?? '');
-        $stmt = $conn->prepare("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value=?");
-        $stmt->bind_param("sss", $f, $v, $v);
-        $stmt->execute();
-    }
-    $msg = "Azure App Registration settings updated.";
-}
-
-$res = $conn->query("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'azure_%'");
-$settings = [];
-while ($row = $res->fetch_assoc()) {
-    $settings[$row['setting_key']] = $row['setting_value'];
-}
-$conn->close();
-function esc($x) { return htmlspecialchars($x ?? '', ENT_QUOTES); }
+$admin_pages = [
+    'index.php'             => 'Admin Dashboard',
+    'saml_settings.php'     => 'SAML/Entra SSO Settings',
+    'azure_settings.php'    => 'Azure App Registration',
+    'keyvault_settings.php' => 'Key Vault / SMTP Settings',
+    'users.php'             => 'User Management',
+    'admin_users.php'       => 'Admin User Management',
+];
+$current_page = basename($_SERVER['PHP_SELF']);
+// TODO: Load and save Azure App Registration settings here.
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Azure App Registration</title>
+    <title>Azure App Registration - DevGenie Admin</title>
     <link rel="stylesheet" href="../assets/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+    .admin-main-card {
+        background: #fff;
+        border-radius: 22px;
+        box-shadow: 0 8px 32px rgba(44,80,140,0.10), 0 1.5px 8px rgba(44,80,140,0.08);
+        max-width: 540px;
+        margin: 2.5em auto 0 auto;
+        padding: 2.2em 2.2em 2em 2.2em;
+    }
+    .admin-section-title {
+        font-size: 1.33em;
+        font-weight: 700;
+        color: #1d2769;
+        margin-bottom: 1.2em;
+        letter-spacing: 0.01em;
+    }
+    </style>
 </head>
 <body>
-<div class="container" style="max-width:700px;">
-    <h2>Azure App Registration</h2>
-    <?php if (!empty($msg)) echo "<div class='success'>$msg</div>"; ?>
+<nav class="admin-nav">
+    <?php foreach ($admin_pages as $file => $label): ?>
+        <a href="<?= $file ?>" class="<?= $current_page === $file ? 'active' : '' ?>">
+            <?= htmlspecialchars($label) ?>
+        </a>
+    <?php endforeach; ?>
+    <a href="../index.php" class="nav-portal">Return to Portal</a>
+</nav>
+<div class="admin-main-card">
+    <div class="admin-section-title">Azure App Registration</div>
+    <div style="margin-bottom:2em;font-size:1.06em;color:#555e73;">
+        Configure Azure AD application registration for DevGenie integration.
+        <br><span style="color:#b20e3a;font-weight:500;">Super admin only:</span> Only super admins can modify these settings.
+    </div>
     <form method="post" autocomplete="off">
-        <label>Client ID:<br>
-            <input type="text" name="azure_client_id" value="<?=esc($settings['azure_client_id'] ?? '')?>" style="width:95%">
-        </label><br>
-        <label>Tenant ID:<br>
-            <input type="text" name="azure_tenant_id" value="<?=esc($settings['azure_tenant_id'] ?? '')?>" style="width:95%">
-        </label><br>
-        <label>Client Secret:<br>
-            <input type="text" name="azure_client_secret" value="<?=esc($settings['azure_client_secret'] ?? '')?>" style="width:95%">
-        </label><br>
-        <button type="submit">Save Settings</button>
+        <div class="form-group">
+            <label for="azure_client_id">Application (client) ID:</label>
+            <input type="text" name="azure_client_id" id="azure_client_id" value="" required>
+        </div>
+        <div class="form-group">
+            <label for="azure_tenant_id">Directory (tenant) ID:</label>
+            <input type="text" name="azure_tenant_id" id="azure_tenant_id" value="" required>
+        </div>
+        <div class="form-group">
+            <label for="azure_client_secret">Client Secret:</label>
+            <input type="password" name="azure_client_secret" id="azure_client_secret" value="" required>
+        </div>
+        <button type="submit" class="admin-update-btn">Save Azure Settings</button>
     </form>
-    <p><a href="index.php">&laquo; Back to Admin Dashboard</a></p>
 </div>
 </body>
 </html>
