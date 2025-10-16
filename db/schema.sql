@@ -51,8 +51,8 @@ CREATE TABLE IF NOT EXISTS requests (
 );
 
 -- Add indexes for foreign keys (optional, for performance)
-ALTER TABLE requests ADD INDEX idx_requester (requester_id);
-ALTER TABLE requests ADD INDEX idx_approver (approver_id);
+ALTER TABLE requests ADD INDEX IF NOT EXISTS idx_requester (requester_id);
+ALTER TABLE requests ADD INDEX IF NOT EXISTS idx_approver (approver_id);
 
 -- For existing installs: upgrade users and admins for new columns (safe to run)
 ALTER TABLE users 
