@@ -1,4 +1,5 @@
 -- DevGenie Full Schema (for new installs or upgrades)
+-- Compatible with MySQL 5.7+ (no IF NOT EXISTS on ADD COLUMN/INDEX)
 
 -- Admins table (local admin accounts, including super admin)
 CREATE TABLE IF NOT EXISTS admins (
@@ -47,28 +48,32 @@ CREATE TABLE IF NOT EXISTS requests (
     approver_id INT DEFAULT NULL,
     approval_comment VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_requester (requester_id),
+    KEY idx_approver (approver_id)
 );
 
--- Add indexes for foreign keys (optional, for performance)
-ALTER TABLE requests ADD INDEX IF NOT EXISTS idx_requester (requester_id);
-ALTER TABLE requests ADD INDEX IF NOT EXISTS idx_approver (approver_id);
+-- === UPGRADE SECTION: For existing installs only ===
+-- The following ALTERs are safe to run repeatedly; ignore errors "Duplicate column name" or "Duplicate key name"
 
--- For existing installs: upgrade users and admins for new columns (safe to run)
-ALTER TABLE users 
-    ADD COLUMN IF NOT EXISTS is_approver TINYINT(1) DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS is_super_admin TINYINT(1) DEFAULT 0;
+-- Add missing columns to users table (ignore error if already exists)
+ALTER TABLE users ADD COLUMN is_approver TINYINT(1) DEFAULT 0;
+ALTER TABLE users ADD COLUMN is_super_admin TINYINT(1) DEFAULT 0;
 
-ALTER TABLE admins 
-    ADD COLUMN IF NOT EXISTS is_super_admin TINYINT(1) DEFAULT 0;
+-- Add missing column to admins table (ignore error if already exists)
+ALTER TABLE admins ADD COLUMN is_super_admin TINYINT(1) DEFAULT 0;
 
-ALTER TABLE requests
-    ADD COLUMN IF NOT EXISTS approver_id INT DEFAULT NULL,
-    ADD COLUMN IF NOT EXISTS approval_comment VARCHAR(255),
-    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    ADD COLUMN IF NOT EXISTS display_name VARCHAR(100),
-    ADD COLUMN IF NOT EXISTS external_email VARCHAR(100),
-    ADD COLUMN IF NOT EXISTS username_prefix VARCHAR(50);
+-- Add missing columns to requests table (ignore error if already exists)
+ALTER TABLE requests ADD COLUMN approver_id INT DEFAULT NULL;
+ALTER TABLE requests ADD COLUMN approval_comment VARCHAR(255);
+ALTER TABLE requests ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE requests ADD COLUMN display_name VARCHAR(100);
+ALTER TABLE requests ADD COLUMN external_email VARCHAR(100);
+ALTER TABLE requests ADD COLUMN username_prefix VARCHAR(50);
+
+-- Add indexes to requests table (ignore error if already exists)
+ALTER TABLE requests ADD INDEX idx_requester (requester_id);
+ALTER TABLE requests ADD INDEX idx_approver (approver_id);
 
 -- Set the first admin as super admin if only one exists (for upgrades)
 UPDATE admins SET is_super_admin = 1 WHERE id = (SELECT id FROM (SELECT id FROM admins ORDER BY id ASC LIMIT 1) AS t);
