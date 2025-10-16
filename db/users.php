@@ -24,9 +24,12 @@ function user_by_dev_email($email) {
     return $stmt->get_result()->fetch_assoc();
 }
 
-function create_user($display_name, $dev_email, $external_id = null, $is_admin = 0, $prod_email = null, $notif_pref = 'dev', $local_password_hash = null) {
-    $stmt = db()->prepare("INSERT INTO users (display_name, dev_email, external_id, is_admin, prod_email, notification_email_preference, local_password_hash) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssisss", $display_name, $dev_email, $external_id, $is_admin, $prod_email, $notif_pref, $local_password_hash);
+function create_user($display_name, $dev_email, $external_id = null, $is_admin = 0, $is_approver = 0, $is_super_admin = 0, $prod_email = null, $notif_pref = 'dev', $local_password_hash = null) {
+    $stmt = db()->prepare(
+        "INSERT INTO users (display_name, dev_email, external_id, is_admin, is_approver, is_super_admin, prod_email, notification_email_preference, local_password_hash) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    );
+    $stmt->bind_param("sssiiisss", $display_name, $dev_email, $external_id, $is_admin, $is_approver, $is_super_admin, $prod_email, $notif_pref, $local_password_hash);
     $stmt->execute();
     return db()->insert_id;
 }
@@ -38,7 +41,7 @@ function update_user($id, $fields) {
     foreach ($fields as $k => $v) {
         $sets[] = "$k=?";
         // type guessing
-        if ($k == 'is_admin') $types .= 'i';
+        if (in_array($k, ['is_admin', 'is_approver', 'is_super_admin'])) $types .= 'i';
         else $types .= 's';
         $params[] = $v;
     }

@@ -1,34 +1,11 @@
 <?php
-// Redirect to setup.php if config is missing
-if (!file_exists(__DIR__ . '/../config/config.php')) {
-    header("Location: /setup.php");
-    exit;
-}
-require_once(__DIR__ . '/../config/config.php');
-
-// Check if admin exists in DB
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-$res = $conn->query("SHOW TABLES LIKE 'admins'");
-$admin_exists = false;
-if ($res && $res->num_rows > 0) {
-    $res2 = $conn->query("SELECT COUNT(*) as cnt FROM admins");
-    $row = $res2 ? $res2->fetch_assoc() : null;
-    $admin_exists = $row && $row['cnt'] > 0;
-}
-if (!$admin_exists) {
-    header("Location: /setup.php");
-    exit;
-}
-$conn->close();
-
 session_start();
-// Redirect already authenticated users
-if (isset($_SESSION['admin_id'])) {
-    header("Location: admin/index.php");
-    exit;
-}
 if (isset($_SESSION['user_id'])) {
     header("Location: index.php");
+    exit;
+}
+if (isset($_SESSION['admin_id'])) {
+    header("Location: admin/index.php");
     exit;
 }
 ?>
@@ -36,63 +13,70 @@ if (isset($_SESSION['user_id'])) {
 <html>
 <head>
     <title>Sign In - DevGenie Portal</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="stylesheet" href="assets/style.css">
+    <script>
+        // Attempt SSO login automatically after DOM loads
+        window.onload = function() {
+            window.location.href = "/saml/login.php";
+        };
+    </script>
     <style>
-    .wizard-guide-btn {
-        display: block;
-        width: 90%;
-        max-width: 400px;
-        margin: 1.5em auto;
-        padding: 20px;
-        font-size: 1.2em;
-        font-weight: 700;
-        text-align: center;
-        background: #f5faff;
-        color: #4263eb;
-        border: 2px solid #b9c6f2;
-        border-radius: 10px;
+    .admin-link {
+        position: fixed;
+        bottom: 18px;
+        right: 24px;
+        background: #ede9fe;
+        color: #7c3aed;
+        padding: 7px 16px;
+        border-radius: 7px;
+        border: 1.3px solid #e9d5ff;
+        font-weight: 600;
+        font-size: 1em;
         text-decoration: none;
-        transition: background 0.15s, box-shadow 0.15s;
-        box-shadow: 0 2px 24px rgba(44,80,140,0.09);
+        z-index: 100;
+        box-shadow: 0 2px 12px #b6d1ff24;
     }
-    .wizard-guide-btn:hover {
-        background: #e8f0fe;
-        color: #2c3f85;
-        border-color: #4263eb;
-        box-shadow: 0 4px 30px rgba(44,80,140,0.13);
+    .admin-link:hover {
+        background: #c7d2fe;
+        color: #4c1d95;
+        border-color: #a5b4fc;
     }
-    .admin-login-section {
-        max-width: 400px;
-        margin: 2em auto;
-        padding: 2em;
-        background: #f9f9f9;
-        border-radius: 8px;
-        border: 1px solid #ddd;
+    .sso-btn {
+        display: block;
+        width: 100%;
+        font-size: 1.18em;
+        padding: 21px 0;
+        background: linear-gradient(90deg,#e0ecfc 0,#dbeafe 100%);
+        color: #1d2769;
+        font-weight: 700;
+        border: 2px solid #3b82f6;
+        border-radius: 14px;
+        margin: 0 auto 2.2em auto;
+        box-shadow: 0 2px 18px #b6d1ff22;
+        cursor: pointer;
+        text-align: center;
+        transition: background 0.14s, border 0.13s, box-shadow 0.14s, color 0.14s;
+        text-decoration: none;
     }
-    hr {
-        margin: 2em 0;
+    .sso-btn:hover {
+        background: linear-gradient(90deg,#dbeafe 0,#bae6fd 100%);
+        border-color: #2563eb;
+        color: #193073;
+        box-shadow: 0 4px 24px #a5b4fc33;
     }
     </style>
 </head>
 <body>
-<div class="container" style="max-width:500px;">
-    <h2>Sign In</h2>
-    <a class="wizard-guide-btn" href="/saml/login.php"><b>Sign in with Entra SSO (SAML)</b></a>
-    <hr>
-    <div class="admin-login-section">
-        <form method="post" action="admin_login.php">
-            <h4>Admin Login (local)</h4>
-            <label>Username:
-                <input type="text" name="username" autocomplete="username" required>
-            </label>
-            <br>
-            <label>Password:
-                <input type="password" name="password" autocomplete="current-password" required>
-            </label>
-            <br>
-            <button type="submit">Sign In (Admin)</button>
-        </form>
-    </div>
+<div class="container" style="max-width:420px;">
+    <h2 style="margin-bottom:2em;">Sign In</h2>
+    <noscript>
+        <a class="sso-btn" href="/saml/login.php">Sign in with Entra SSO (SAML)</a>
+        <div style="color:#b20e3a; background:#ffe3e7; border:1px solid #ffb1c2; border-radius:7px; padding:9px 13px; font-size:1.08em;">
+            JavaScript is required for auto-login. Click the button above to sign in.
+        </div>
+    </noscript>
+    <a href="/admin/" class="admin-link">Admin login</a>
 </div>
 </body>
 </html>

@@ -6,7 +6,6 @@ body {
     color: #232946;
     margin: 0;
 }
-
 .admin-nav {
     display: flex;
     gap: 28px;
@@ -50,8 +49,6 @@ body {
     color: #5b21b6;
     border-color: #c4b5fd;
 }
-
-/* Card container for main content */
 .container {
     background: #fff;
     border-radius: 22px;
@@ -60,37 +57,147 @@ body {
     margin: 2.5em auto 0 auto;
     max-width: 700px;
 }
-
-/* Headings */
-h2, h3 {
-    margin-top: 0.4em;
-    margin-bottom: 0.9em;
-    font-weight: 700;
-    color: #1d2769;
-    letter-spacing: 0.01em;
+@media (max-width: 900px) {
+    .container { padding: 1.2em 0.4em; }
+    .admin-nav { flex-wrap: wrap; }
+    .admin-table th, .admin-table td { padding: 7px 6px; }
 }
-h2 { font-size: 2em; }
-h3 { font-size: 1.25em; }
-
-/* Buttons */
-button, input[type="submit"] {
-    margin-top: 1em;
-    background: linear-gradient(90deg, #2347ba 60%, #4f8cff 100%);
+@media (max-width: 480px) {
+    .container { padding: 0.6em 0.2em; }
+    .admin-nav { font-size: 0.97em; }
+}
+.sso-btn {
+    display: block;
+    width: 100%;
+    font-size: 1.18em;
+    padding: 21px 0;
+    background: linear-gradient(90deg,#e0ecfc 0,#dbeafe 100%);
+    color: #1d2769;
+    font-weight: 700;
+    border: 2px solid #3b82f6;
+    border-radius: 14px;
+    margin: 0 auto 2.2em auto;
+    box-shadow: 0 2px 18px #b6d1ff22;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.14s, border 0.13s, box-shadow 0.14s, color 0.14s;
+    text-decoration: none;
+}
+.sso-btn:hover {
+    background: linear-gradient(90deg,#dbeafe 0,#bae6fd 100%);
+    border-color: #2563eb;
+    color: #193073;
+    box-shadow: 0 4px 24px #a5b4fc33;
+}
+.login-or {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 2em 0 1.4em 0;
+}
+.login-or span {
+    margin: 0 0.8em;
+    color: #7e88a3;
+    font-weight: 600;
+    font-size: 1.05em;
+}
+.login-or:before,
+.login-or:after {
+    content: '';
+    flex: 1;
+    border-bottom: 1.5px solid #e4e4e4;
+    margin-bottom: 2px;
+}
+.admin-login-section {
+    max-width: 95%;
+    margin: 1.5em auto 0 auto;
+    padding: 1.5em 1.3em 1.3em 1.3em;
+    background: #f6f7fa;
+    border-radius: 15px;
+    border: 1.5px solid #e0e7ef;
+    box-shadow: 0 2px 10px #b6bad133;
+}
+.admin-login-section label {
+    display: block;
+    font-weight: 600;
+    margin: 0.6em 0 0.2em 0;
+    color: #2a3659;
+}
+.admin-login-section input[type="text"],
+.admin-login-section input[type="password"] {
+    width: 95%;
+    padding: 9px 8px;
+    border: 1.5px solid #b8c6d9;
+    border-radius: 6px;
+    font-size: 1em;
+    margin-bottom: 1.1em;
+    background: #fafdff;
+    transition: border 0.13s;
+}
+.admin-login-section input[type="text"]:focus,
+.admin-login-section input[type="password"]:focus {
+    border-color: #2563eb;
+    outline: none;
+}
+.admin-login-section button,
+.admin-login-section input[type="submit"] {
+    padding: 12px 0;
+    width: 90%;
+    background: linear-gradient(90deg,#2347ba 60%,#4f8cff 100%);
     color: #fff;
-    padding: 11px 34px;
     border-radius: 7px;
     border: none;
-    font-weight: 600;
-    font-size: 1.08em;
+    font-weight: 700;
+    font-size: 1.1em;
     cursor: pointer;
-    transition: background 0.16s, box-shadow 0.12s;
+    transition: background 0.14s, box-shadow 0.12s;
     box-shadow: 0 2px 12px #b6d1ff24;
+    margin-top: 1.1em;
 }
-button:hover, input[type="submit"]:hover {
-    background: linear-gradient(90deg, #193073 60%, #4f8cff 100%);
+.admin-login-section button:hover,
+.admin-login-section input[type="submit"]:hover {
+    background: linear-gradient(90deg,#193073 60%,#4f8cff 100%);
 }
-
-/* Tables */
+hr {
+    margin: 2.2em 0;
+    border: none;
+    border-top: 1.5px solid #e4e4e4;
+}
+.error-msg {
+    color: #b20e3a;
+    background: #ffe3e7;
+    border: 1px solid #ffb1c2;
+    padding: 13px 16px;
+    border-radius: 8px;
+    margin-bottom: 1.3em;
+    font-size: 1.1em;
+}
+.portal-welcome {
+    font-size: 2em;
+    font-weight: 700;
+    color: #1e2a5c;
+    margin-bottom: 0.5em;
+}
+.portal-profile-link {
+    font-size: 1.11em;
+    margin-right: 1.6em;
+}
+.admin-dashboard-btn, .approver-dashboard-btn {
+    background: #f3e8ff;
+    color: #7c3aed;
+    border-radius: 7px;
+    padding: 9px 20px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1.3px solid #e9d5ff;
+    transition: background 0.14s, color 0.14s;
+    margin-right: 1.2em;
+}
+.admin-dashboard-btn:hover, .approver-dashboard-btn:hover {
+    background: #c7d2fe;
+    color: #4c1d95;
+    border-color: #a5b4fc;
+}
 .admin-table, table {
     border-collapse: separate;
     border-spacing: 0;
@@ -124,8 +231,6 @@ button:hover, input[type="submit"]:hover {
 .admin-table tr:hover, table tr:hover {
     background: #e0eaff !important;
 }
-
-/* Success Message */
 .success-msg {
     color: #257a3e;
     background: #e8ffe8;
@@ -135,8 +240,6 @@ button:hover, input[type="submit"]:hover {
     margin-bottom: 1.2em;
     font-size: 1.05em;
 }
-
-/* Textarea */
 textarea {
     border: 1.5px solid #b8c6d9;
     border-radius: 6px;
@@ -147,8 +250,6 @@ textarea {
     margin-bottom: 1em;
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
 }
-
-/* General links */
 a {
     color: #2347ba;
     text-decoration: underline;
@@ -157,22 +258,4 @@ a {
 a:hover {
     color: #011e59;
     text-decoration: none;
-}
-
-@media (max-width: 900px) {
-    .container { padding: 1.2em 0.4em; }
-    .admin-nav { flex-wrap: wrap; }
-    .admin-table th, .admin-table td { padding: 7px 6px; }
-}
-
-/* Portal-specific tweaks */
-.portal-welcome {
-    font-size: 2em;
-    font-weight: 700;
-    color: #1e2a5c;
-    margin-bottom: 0.5em;
-}
-.portal-profile-link {
-    font-size: 1.11em;
-    margin-right: 1.6em;
 }
